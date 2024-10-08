@@ -1,6 +1,6 @@
 ﻿using Entities;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
+using System;
+using System.IO;
 
 namespace StoreDataManager
 {
@@ -20,62 +20,136 @@ namespace StoreDataManager
                 return instance;
             }
         }
+
         private static readonly string DatabaseBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "TinySQL");
-        private static readonly string DataPath = Path.Combine(DatabaseBasePath, "Data");
+        private static string DataPath = Path.Combine(DatabaseBasePath, "Data");
         private static readonly string SystemCatalogPath = Path.Combine(DataPath, "SystemCatalog");
         private static readonly string SystemDatabasesFile = Path.Combine(SystemCatalogPath, "SystemDatabases.table");
         private static readonly string SystemTablesFile = Path.Combine(SystemCatalogPath, "SystemTables.table");
-        public Store()
+
+        private Store()
         {
-            this.InitializeSystemCatalog();
-            
+            InitializeSystemCatalog();
         }
 
         private void InitializeSystemCatalog()
         {
-            // Always make sure that the system catalog and above folder
-            // exist when initializing
             Directory.CreateDirectory(SystemCatalogPath);
+            if (!File.Exists(SystemDatabasesFile))
+            {
+                File.Create(SystemDatabasesFile).Close();
+            }
+            if (!File.Exists(SystemTablesFile))
+            {
+                File.Create(SystemTablesFile).Close();
+            }
         }
 
-        public OperationStatus CreateTable()
+        public OperationStatus SetDatabase(string databaseName)
         {
-            // Creates a default DB called TESTDB
-            Directory.CreateDirectory($@"{DataPath}/TESTDB");
-
-            // Creates a default Table called ESTUDIANTES
-            var tablePath = $@"{DataPath}/TESTDB/ESTUDIANTES.Table";
-
-            using (FileStream stream = File.Open(tablePath, FileMode.OpenOrCreate))
-            using (BinaryWriter writer = new (stream))
+            if (string.IsNullOrWhiteSpace(databaseName))
             {
-                // Create an object with a hardcoded.
-                // First field is an int, second field is a string of size 30,
-                // third is a string of 50
-                int id = 1;
-                string nombre = "Isaac".PadRight(30); // Pad to make the size of the string fixed
-                string apellido = "Ramirez".PadRight(50);
-
-                writer.Write(id);
-                writer.Write(nombre);
-                writer.Write(apellido);
+                return OperationStatus.Error;
             }
+
+            string databasePath = Path.Combine(DatabaseBasePath, databaseName);
+            if (!Directory.Exists(databasePath))
+            {
+                return OperationStatus.Error;
+            }
+
+            DataPath = databasePath;
             return OperationStatus.Success;
         }
 
-        public OperationStatus Select()
+        public OperationStatus CreateDatabase(string databaseName)
         {
-            // Creates a default Table called ESTUDIANTES
-            var tablePath = $@"{DataPath}/TESTDB/ESTUDIANTES.Table";
-            using (FileStream stream = File.Open(tablePath, FileMode.OpenOrCreate))
-            using (BinaryReader reader = new (stream))
+            if (string.IsNullOrWhiteSpace(databaseName))
             {
-                // Print the values as a I know exactly the types, but this needs to be done right
-                Console.WriteLine(reader.ReadInt32());
-                Console.WriteLine(reader.ReadString());
-                Console.WriteLine(reader.ReadString());
-                return OperationStatus.Success;
+                return OperationStatus.Error;
             }
+
+            string databasePath = Path.Combine(DatabaseBasePath, databaseName);
+            if (Directory.Exists(databasePath))
+            {
+                return OperationStatus.Error;
+            }
+
+            Directory.CreateDirectory(databasePath);
+            
+            // Add the new database to SystemDatabases.table
+            using (StreamWriter writer = File.AppendText(SystemDatabasesFile))
+            {
+                writer.WriteLine(databaseName);
+            }
+
+            return OperationStatus.Success;
+        }
+
+        public OperationStatus CreateTable(string tableName, List<(string Name, Type Type)> columns)
+        {
+            if (string.IsNullOrWhiteSpace(tableName) || columns == null || columns.Count == 0)
+            {
+                return OperationStatus.Error;
+            }
+
+            string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+            if (File.Exists(tablePath))
+            {
+                return OperationStatus.Error;
+            }
+
+            using (StreamWriter writer = new StreamWriter(tablePath))
+            {
+                foreach (var column in columns)
+                {
+                    writer.WriteLine($"{column.Name},{column.Type}");
+                }
+            }
+
+            // Add the new table to SystemTables.table
+            using (StreamWriter writer = File.AppendText(SystemTablesFile))
+            {
+                writer.WriteLine($"{Path.GetFileName(DataPath)},{tableName}");
+            }
+
+            return OperationStatus.Success;
+        }
+
+        public OperationStatus Select(string tableName)
+        {
+            string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+            if (!File.Exists(tablePath))
+            {
+                return OperationStatus.Error;
+            }
+
+            using (StreamReader reader = new StreamReader(tablePath))
+            {
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    Console.WriteLine(line);
+                }
+            }
+
+            return OperationStatus.Success;
+        }
+
+        public OperationStatus ShowDatabases()
+        {
+            if (!Directory.Exists(DatabaseBasePath))
+            {
+                return OperationStatus.Error;
+            }
+
+            string[] databases = Directory.GetDirectories(DatabaseBasePath);
+            foreach (var database in databases)
+            {
+                Console.WriteLine(Path.GetFileName(database));
+            }
+
+            return OperationStatus.Success;
         }
     }
 }

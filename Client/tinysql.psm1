@@ -1,7 +1,7 @@
-function Execute-MyQuery {
+function Invoke-MyQuery {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$queryFilePath,
+        [string]$Query,
         [Parameter(Mandatory = $true)]
         [int]$port,
         [Parameter(Mandatory = $true)]
@@ -9,7 +9,7 @@ function Execute-MyQuery {
     )
 
     # Read the contents of the text file
-    $queryCommands = Get-Content $queryFilePath -Raw
+    $queryCommands = Get-Content $Query -Raw
 
     # Split the contents into individual commands using semicolon as the delimiter
     $commands = $queryCommands -split ';'
@@ -24,8 +24,9 @@ function Execute-MyQuery {
             continue
         }
 
-        # Your code logic to execute the query goes here
-        # Example: Print the query
-        Write-Host "Executing query: $command"
+        # Use the Send-SQLCommand function from tinysqlclient.ps1
+        # Pass the $ip and $port parameters to the function
+        . $PSScriptRoot\tinysqlclient.ps1 -IP $ip -Port $port
+        Send-SQLCommand -command $command
     }
 }

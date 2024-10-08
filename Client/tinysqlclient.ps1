@@ -59,11 +59,12 @@ function Send-SQLCommand {
 
     Write-Host -ForegroundColor Green "Response received: $response"
     
-    $responseObject = ConvertFrom-Json -InputObject $response
-    Write-Output $responseObject
+    if ($response) {
+        $responseObject = ConvertFrom-Json -InputObject $response
+        Write-Output $responseObject
+    } else {
+        Write-Host "Received empty response from server."
+    }
     $client.Shutdown([System.Net.Sockets.SocketShutdown]::Both)
     $client.Close()
 }
-
-Send-SQLCommand -command "CREATE TABLE ESTUDIANTE"
-Send-SQLCommand -command "SELECT * FROM ESTUDIANTE"

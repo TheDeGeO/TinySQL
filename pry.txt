@@ -1,0 +1,3 @@
+David Obando Blanco
+Andy Lopez Mora
+https://github.com/TheDeGeO/TinySQL
