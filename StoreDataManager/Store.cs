@@ -176,24 +176,241 @@ namespace StoreDataManager
             }
         }
 
-        public OperationStatus Select(string tableName)
+        public OperationStatus Select(string tableName, List<string> columns, string whereClause, string orderByClause)
         {
             string tablePath = Path.Combine(DataPath, $"{tableName}.table");
             if (!File.Exists(tablePath))
             {
+                Console.WriteLine($"Table {tableName} does not exist.");
                 return OperationStatus.Error;
+            }
+
+            List<string[]> results = new List<string[]>();
+            List<string> headers = new List<string>();
+            List<string> types = new List<string>();
+            List<int> columnIndices = new List<int>();
+
+            // Check if we can use an index for the where clause
+            bool useIndex = false;
+            string indexedColumn = "";
+            string indexValue = "";
+            string indexOperation = "";
+            if (!string.IsNullOrEmpty(whereClause))
+            {
+                string[] whereClauseParts = whereClause.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (whereClauseParts.Length >= 3)
+                {
+                    indexedColumn = whereClauseParts[0];
+                    indexOperation = whereClauseParts[1];
+                    indexValue = string.Join(" ", whereClauseParts.Skip(2)).Trim('"');
+                    if (tableIndices.ContainsKey(tableName) && tableIndices[tableName].ContainsKey(indexedColumn))
+                    {
+                        useIndex = true;
+                    }
+                }
             }
 
             using (StreamReader reader = new StreamReader(tablePath))
             {
                 string? line;
+                bool isFirstDataLine = true;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    Console.WriteLine(line);
+                    if (line.StartsWith("("))
+                    {
+                        // We've reached the data lines
+                        if (useIndex)
+                        {
+                            // If we're using an index, we can use it for efficient searching
+                            Index index = tableIndices[tableName][indexedColumn];
+                            IEnumerable<int> matchingRows;
+
+                            switch (indexOperation)
+                            {
+                                case "=":
+                                    matchingRows = new[] { index.Search(indexValue) };
+                                    break;
+                                case "<":
+                                    matchingRows = index.SearchLessThan(indexValue);
+                                    break;
+                                case ">":
+                                    matchingRows = index.SearchGreaterThan(indexValue);
+                                    break;
+                                case "<=":
+                                    matchingRows = index.SearchLessThanOrEqual(indexValue);
+                                    break;
+                                case ">=":
+                                    matchingRows = index.SearchGreaterThanOrEqual(indexValue);
+                                    break;
+                                default:
+                                    useIndex = false;
+                                    matchingRows = Enumerable.Empty<int>();
+                                    break;
+                            }
+
+                            if (useIndex)
+                            {
+                                foreach (int rowIndex in matchingRows)
+                                {
+                                    if (rowIndex != -1)
+                                    {
+                                        reader.BaseStream.Seek(0, SeekOrigin.Begin);
+                                        for (int i = 0; i <= rowIndex; i++)
+                                        {
+                                            reader.ReadLine();
+                                        }
+                                        line = reader.ReadLine();
+                                        ProcessDataLine(line, headers, columnIndices, whereClause, results);
+                                    }
+                                }
+                                break; // We've processed all matching rows
+                            }
+                        }
+
+                        ProcessDataLine(line, headers, columnIndices, whereClause, results);
+                        isFirstDataLine = false;
+                    }
+                    else if (isFirstDataLine)
+                    {
+                        string[] columnDefinition = line.Split(',');
+                        headers.Add(columnDefinition[0].Trim());
+                        types.Add(columnDefinition[1].Trim());
+                        
+                        // Add index to columnIndices if it's in the requested columns
+                        if (columns.Contains(columnDefinition[0].Trim()))
+                        {
+                            columnIndices.Add(headers.Count - 1);
+                        }
+                    }
                 }
             }
 
+            if (!string.IsNullOrEmpty(orderByClause))
+            {
+                ApplyOrderBy(results, headers.ToArray(), orderByClause);
+            }
+
+            // Print results
+            foreach (var row in results)
+            {
+                Console.WriteLine(string.Join(",", row.Select(v => string.IsNullOrEmpty(v) ? "NULL" : v)));
+            }
+
             return OperationStatus.Success;
+        }
+
+        private void ProcessDataLine(string line, List<string> headers, List<int> columnIndices, string whereClause, List<string[]> results)
+        {
+            string[] values = line.Trim('(', ')').Split(new[] { ",," }, StringSplitOptions.None);
+            
+            if (EvaluateWhereClause(headers, values, whereClause))
+            {
+                string[] selectedValues = columnIndices.Select(i => i < values.Length ? values[i].Trim('"', ' ', ',') : "NULL").ToArray();
+                results.Add(selectedValues);
+            }
+        }
+
+        private bool EvaluateWhereClause(List<string> headers, string[] values, string whereClause)
+        {
+            if (string.IsNullOrEmpty(whereClause))
+            {
+                return true;
+            }
+
+            // Trim any trailing commas from the where clause
+            whereClause = whereClause.TrimEnd(',');
+
+            string[] whereClauseParts = whereClause.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (whereClauseParts.Length < 3)
+            {
+                Console.WriteLine("Invalid WHERE clause format.");
+                return false;
+            }
+
+            string columnName = whereClauseParts[0];
+            string operation = whereClauseParts[1];
+            string value = string.Join(" ", whereClauseParts.Skip(2)); // Join the rest of the parts in case the value contains spaces
+
+            int columnIndex = headers.IndexOf(columnName);
+            if (columnIndex == -1)
+            {
+                Console.WriteLine($"Column {columnName} does not exist.");
+                return false;
+            }
+
+            string columnValue = values[columnIndex];
+            
+            // Trim parentheses and split by double commas
+            columnValue = columnValue.Trim('(', ')');
+            string[] columnValueParts = columnValue.Split(new[] { ",," }, StringSplitOptions.None);
+            
+            // Use the first non-empty part as the actual value
+            columnValue = columnValueParts.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v)) ?? string.Empty;
+
+            // Trim quotes, whitespace, and any remaining single commas from both the column value and the comparison value
+            columnValue = columnValue.Trim().Trim('"').Trim(',');
+            value = value.Trim().Trim('"');
+
+            switch (operation)
+            {
+                case "=":
+                    return string.Equals(columnValue, value, StringComparison.OrdinalIgnoreCase);
+                case "<>":
+                    return !string.Equals(columnValue, value, StringComparison.OrdinalIgnoreCase);
+                case ">":
+                case "<":
+                case ">=":
+                case "<=":
+                    if (double.TryParse(columnValue, out double numericColumnValue) && double.TryParse(value, out double numericValue))
+                    {
+                        return operation switch
+                        {
+                            ">" => numericColumnValue > numericValue,
+                            "<" => numericColumnValue < numericValue,
+                            ">=" => numericColumnValue >= numericValue,
+                            "<=" => numericColumnValue <= numericValue,
+                            _ => false // This should never happen
+                        };
+                    }
+                    else
+                    {
+                        return operation switch
+                        {
+                            ">" => string.Compare(columnValue, value, StringComparison.OrdinalIgnoreCase) > 0,
+                            "<" => string.Compare(columnValue, value, StringComparison.OrdinalIgnoreCase) < 0,
+                            ">=" => string.Compare(columnValue, value, StringComparison.OrdinalIgnoreCase) >= 0,
+                            "<=" => string.Compare(columnValue, value, StringComparison.OrdinalIgnoreCase) <= 0,
+                            _ => false
+                        };
+                    }
+                default:
+                    Console.WriteLine($"Unsupported operation {operation}.");
+                    return false;
+            }
+        }
+
+        private void ApplyOrderBy(List<string[]> results, string[] headers, string orderByClause)
+        {
+            string[] parts = orderByClause.Split(' ');
+            if (parts.Length != 2)
+            {
+                return; // Invalid order by clause, do nothing
+            }
+
+            string columnName = parts[0];
+            string direction = parts[1].ToLower();
+
+            int columnIndex = Array.IndexOf(headers, columnName);
+            if (columnIndex == -1)
+            {
+                return; // Column not found, do nothing
+            }
+
+            results.Sort((a, b) =>
+            {
+                int comparison = string.Compare(a[columnIndex], b[columnIndex]);
+                return direction == "desc" ? -comparison : comparison;
+            });
         }
 
         public OperationStatus ShowDatabases()
@@ -212,6 +429,7 @@ namespace StoreDataManager
                 {
                     Console.WriteLine(databaseName);
                 }
+
             }
 
             return OperationStatus.Success;
@@ -451,6 +669,10 @@ namespace StoreDataManager
         {
             public abstract void Insert(string key, int value);
             public abstract int Search(string key);
+            public abstract IEnumerable<int> SearchLessThan(string key);
+            public abstract IEnumerable<int> SearchGreaterThan(string key);
+            public abstract IEnumerable<int> SearchLessThanOrEqual(string key);
+            public abstract IEnumerable<int> SearchGreaterThanOrEqual(string key);
         }
 
         private class BTreeIndex : Index
@@ -573,6 +795,98 @@ namespace StoreDataManager
                     return -1;
                 return Search(x.children[i], k);
             }
+
+            public override IEnumerable<int> SearchLessThan(string key)
+            {
+                return SearchLessThanRec(root, key.GetHashCode());
+            }
+
+            private IEnumerable<int> SearchLessThanRec(BTreeNode x, int k)
+            {
+                List<int> result = new List<int>();
+                for (int i = 0; i < x.n; i++)
+                {
+                    if (x.keys[i] >= k)
+                        break;
+                    result.Add(x.values[i]);
+                    if (!x.leaf)
+                        result.AddRange(SearchLessThanRec(x.children[i], k));
+                }
+                if (!x.leaf && x.keys[x.n - 1] < k)
+                    result.AddRange(SearchLessThanRec(x.children[x.n], k));
+                return result;
+            }
+
+            public override IEnumerable<int> SearchGreaterThan(string key)
+            {
+                return SearchGreaterThanRec(root, key.GetHashCode());
+            }
+
+            private IEnumerable<int> SearchGreaterThanRec(BTreeNode x, int k)
+            {
+                List<int> result = new List<int>();
+                int i;
+                for (i = 0; i < x.n; i++)
+                {
+                    if (x.keys[i] > k)
+                    {
+                        result.Add(x.values[i]);
+                        if (!x.leaf)
+                            result.AddRange(SearchGreaterThanRec(x.children[i], k));
+                    }
+                    else if (!x.leaf)
+                        result.AddRange(SearchGreaterThanRec(x.children[i], k));
+                }
+                if (!x.leaf)
+                    result.AddRange(SearchGreaterThanRec(x.children[i], k));
+                return result;
+            }
+
+            public override IEnumerable<int> SearchLessThanOrEqual(string key)
+            {
+                return SearchLessThanOrEqualRec(root, key.GetHashCode());
+            }
+
+            private IEnumerable<int> SearchLessThanOrEqualRec(BTreeNode x, int k)
+            {
+                List<int> result = new List<int>();
+                for (int i = 0; i < x.n; i++)
+                {
+                    if (x.keys[i] > k)
+                        break;
+                    result.Add(x.values[i]);
+                    if (!x.leaf)
+                        result.AddRange(SearchLessThanOrEqualRec(x.children[i], k));
+                }
+                if (!x.leaf && x.keys[x.n - 1] <= k)
+                    result.AddRange(SearchLessThanOrEqualRec(x.children[x.n], k));
+                return result;
+            }
+
+            public override IEnumerable<int> SearchGreaterThanOrEqual(string key)
+            {
+                return SearchGreaterThanOrEqualRec(root, key.GetHashCode());
+            }
+
+            private IEnumerable<int> SearchGreaterThanOrEqualRec(BTreeNode x, int k)
+            {
+                List<int> result = new List<int>();
+                int i;
+                for (i = 0; i < x.n; i++)
+                {
+                    if (x.keys[i] >= k)
+                    {
+                        result.Add(x.values[i]);
+                        if (!x.leaf)
+                            result.AddRange(SearchGreaterThanOrEqualRec(x.children[i], k));
+                    }
+                    else if (!x.leaf)
+                        result.AddRange(SearchGreaterThanOrEqualRec(x.children[i], k));
+                }
+                if (!x.leaf)
+                    result.AddRange(SearchGreaterThanOrEqualRec(x.children[i], k));
+                return result;
+            }
         }
 
         private class BSTIndex : Index
@@ -628,6 +942,94 @@ namespace StoreDataManager
                     return SearchRec(root.left, key);
 
                 return SearchRec(root.right, key);
+            }
+
+            public override IEnumerable<int> SearchLessThan(string key)
+            {
+                List<int> result = new List<int>();
+                SearchLessThanRec(root, key, result);
+                return result;
+            }
+
+            private void SearchLessThanRec(BSTNode node, string key, List<int> result)
+            {
+                if (node == null)
+                    return;
+
+                if (string.Compare(key, node.key) <= 0)
+                    SearchLessThanRec(node.left, key, result);
+                else
+                {
+                    SearchLessThanRec(node.left, key, result);
+                    result.Add(node.value);
+                    SearchLessThanRec(node.right, key, result);
+                }
+            }
+
+            public override IEnumerable<int> SearchGreaterThan(string key)
+            {
+                List<int> result = new List<int>();
+                SearchGreaterThanRec(root, key, result);
+                return result;
+            }
+
+            private void SearchGreaterThanRec(BSTNode node, string key, List<int> result)
+            {
+                if (node == null)
+                    return;
+
+                if (string.Compare(key, node.key) >= 0)
+                    SearchGreaterThanRec(node.right, key, result);
+                else
+                {
+                    SearchGreaterThanRec(node.left, key, result);
+                    result.Add(node.value);
+                    SearchGreaterThanRec(node.right, key, result);
+                }
+            }
+
+            public override IEnumerable<int> SearchLessThanOrEqual(string key)
+            {
+                List<int> result = new List<int>();
+                SearchLessThanOrEqualRec(root, key, result);
+                return result;
+            }
+
+            private void SearchLessThanOrEqualRec(BSTNode node, string key, List<int> result)
+            {
+                if (node == null)
+                    return;
+
+                if (string.Compare(key, node.key) < 0)
+                    SearchLessThanOrEqualRec(node.left, key, result);
+                else
+                {
+                    SearchLessThanOrEqualRec(node.left, key, result);
+                    result.Add(node.value);
+                    SearchLessThanOrEqualRec(node.right, key, result);
+                }
+            }
+
+            public override IEnumerable<int> SearchGreaterThanOrEqual(string key)
+            {
+                List<int> result = new List<int>();
+                SearchGreaterThanOrEqualRec(root, key, result);
+                return result;
+            }
+
+            private void SearchGreaterThanOrEqualRec(BSTNode node, string key, List<int> result)
+            {
+                if (node == null)
+                    return;
+
+                if (string.Compare(key, node.key) > 0)
+                    SearchGreaterThanOrEqualRec(node.right, key, result);
+                else
+                {
+                    SearchGreaterThanOrEqualRec(node.left, key, result);
+                    result.Add(node.value);
+                    SearchGreaterThanOrEqualRec(node.right, key, result);
+                }
             }
         }
 

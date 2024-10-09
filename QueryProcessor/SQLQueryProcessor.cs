@@ -25,7 +25,10 @@ namespace QueryProcessor
             if (sentence.StartsWith("SELECT"))
             {
                 string tableName = ExtractTableName(sentence);
-                return new Select(tableName).Execute();
+                List<string> columns = ExtractColumns(sentence);
+                string whereClause = ExtractWhereClause(sentence);
+                string orderByClause = ExtractOrderByClause(sentence);
+                return new Select(tableName, columns, whereClause, orderByClause).Execute();
             }
             if (sentence.StartsWith("CREATE DATABASE"))
             {
@@ -68,6 +71,29 @@ namespace QueryProcessor
             {
                 throw new UnknownSQLSentenceException();
             }
+        }
+
+        public static List<string> ExtractColumns(string sentence)
+        {
+            int fromIndex = sentence.IndexOf(" FROM ", StringComparison.OrdinalIgnoreCase);
+            if (fromIndex == -1) return new List<string>();
+            
+            string columnsString = sentence.Substring(6, fromIndex - 6).Trim();
+            return columnsString == "*" 
+                ? new List<string> { "*" } 
+                : columnsString.Split(',').Select(c => c.Trim()).ToList();
+        }
+
+        public static string ExtractWhereClause(string sentence)
+        {
+            int whereIndex = sentence.IndexOf(" WHERE ");
+            return whereIndex != -1 ? sentence.Substring(whereIndex + 6).Trim() : string.Empty;
+        }
+
+        public static string ExtractOrderByClause(string sentence)
+        {
+            int orderByIndex = sentence.IndexOf(" ORDER BY ");
+            return orderByIndex != -1 ? sentence.Substring(orderByIndex + 8).Trim() : string.Empty;
         }
 
         public static string ExtractIndexName(string sentence)
