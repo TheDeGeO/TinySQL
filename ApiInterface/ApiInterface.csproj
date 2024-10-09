@@ -13,4 +13,8 @@
     <ProjectReference Include="..\QueryProcessor\QueryProcessor.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="SqlParserCS" Version="0.5.4" />
+  </ItemGroup>
+
 </Project>
