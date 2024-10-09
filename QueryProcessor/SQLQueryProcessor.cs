@@ -92,8 +92,24 @@ namespace QueryProcessor
 
         public static string ExtractOrderByClause(string sentence)
         {
-            int orderByIndex = sentence.IndexOf(" ORDER BY ");
-            return orderByIndex != -1 ? sentence.Substring(orderByIndex + 8).Trim() : string.Empty;
+            int orderByIndex = sentence.IndexOf(" ORDER BY ", StringComparison.OrdinalIgnoreCase);
+            if (orderByIndex == -1)
+                return string.Empty;
+
+            string orderByClause = sentence.Substring(orderByIndex + 9).Trim();
+            string[] parts = orderByClause.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length >= 2)
+            {
+                string direction = parts[parts.Length - 1].ToUpper();
+                if (direction == "ASC" || direction == "DESC")
+                {
+                    return orderByClause;
+                }
+            }
+
+            // If no direction is specified, append "ASC" as the default
+            return orderByClause + " ASC";
         }
 
         public static string ExtractIndexName(string sentence)

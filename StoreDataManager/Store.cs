@@ -190,6 +190,21 @@ namespace StoreDataManager
             List<string> types = new List<string>();
             List<int> columnIndices = new List<int>();
 
+            List<string> allColumns = new List<string>(columns);
+            string orderByColumn = "";
+            if (!string.IsNullOrEmpty(orderByClause))
+            {
+                string[] orderByParts = orderByClause.Split(' ');
+                if (orderByParts.Length >= 1)
+                {
+                    orderByColumn = orderByParts[0];
+                    if (!allColumns.Contains(orderByColumn))
+                    {
+                        allColumns.Add(orderByColumn);
+                    }
+                }
+            }
+
             // Check if we can use an index for the where clause
             bool useIndex = false;
             string indexedColumn = "";
@@ -276,8 +291,8 @@ namespace StoreDataManager
                         headers.Add(columnDefinition[0].Trim());
                         types.Add(columnDefinition[1].Trim());
                         
-                        // Add index to columnIndices if it's in the requested columns
-                        if (columns.Contains(columnDefinition[0].Trim()))
+                        // Add index to columnIndices if it's in the requested columns or the ORDER BY column
+                        if (allColumns.Contains(columnDefinition[0].Trim()) || columnDefinition[0].Trim() == orderByColumn)
                         {
                             columnIndices.Add(headers.Count - 1);
                         }
@@ -287,13 +302,15 @@ namespace StoreDataManager
 
             if (!string.IsNullOrEmpty(orderByClause))
             {
-                ApplyOrderBy(results, headers.ToArray(), orderByClause);
+                ApplyOrderBy(results, headers.ToArray(), orderByClause, columns);
             }
 
             // Print results
             foreach (var row in results)
             {
-                Console.WriteLine(string.Join(",", row.Select(v => string.IsNullOrEmpty(v) ? "NULL" : v)));
+                // Only print the columns that were originally requested
+                var selectedValues = columns.Select(col => row[allColumns.IndexOf(col)]);
+                Console.WriteLine(string.Join(",", selectedValues.Select(v => string.IsNullOrEmpty(v) ? "NULL" : v)));
             }
 
             return OperationStatus.Success;
@@ -389,16 +406,26 @@ namespace StoreDataManager
             }
         }
 
-        private void ApplyOrderBy(List<string[]> results, string[] headers, string orderByClause)
+        private void ApplyOrderBy(List<string[]> results, string[] headers, string orderByClause, List<string> selectedColumns)
         {
+            if (string.IsNullOrWhiteSpace(orderByClause))
+            {
+                return; // No order by clause, do nothing
+            }
+
             string[] parts = orderByClause.Split(' ');
-            if (parts.Length != 2)
+            if (parts.Length < 2)
             {
                 return; // Invalid order by clause, do nothing
             }
 
             string columnName = parts[0];
-            string direction = parts[1].ToLower();
+            string direction = parts[1].ToUpper();
+
+            if (direction != "ASC" && direction != "DESC")
+            {
+                return; // Invalid direction, do nothing
+            }
 
             int columnIndex = Array.IndexOf(headers, columnName);
             if (columnIndex == -1)
@@ -406,11 +433,39 @@ namespace StoreDataManager
                 return; // Column not found, do nothing
             }
 
-            results.Sort((a, b) =>
+            // Store the original indices, full row data, and selected column data before sorting
+            var tempResults = results.Select((row, index) => new
             {
-                int comparison = string.Compare(a[columnIndex], b[columnIndex]);
-                return direction == "desc" ? -comparison : comparison;
+                Row = row,
+                Index = index,
+                SortValue = row[columnIndex],
+                SelectedValues = selectedColumns.Select(col => row[Array.IndexOf(headers, col)]).ToArray()
+            }).ToList();
+
+            tempResults.Sort((a, b) =>
+            {
+                int comparison;
+                if (double.TryParse(a.SortValue, out double doubleA) && double.TryParse(b.SortValue, out double doubleB))
+                {
+                    comparison = doubleA.CompareTo(doubleB);
+                }
+                else
+                {
+                    comparison = string.Compare(a.SortValue, b.SortValue, StringComparison.OrdinalIgnoreCase);
+                }
+
+                // If values are equal, use the original index for stable sorting
+                if (comparison == 0)
+                {
+                    return a.Index.CompareTo(b.Index);
+                }
+
+                return direction == "DESC" ? -comparison : comparison;
             });
+
+            // Update the results list with the sorted data, but only include selected columns
+            results.Clear();
+            results.AddRange(tempResults.Select(item => item.SelectedValues));
         }
 
         public OperationStatus ShowDatabases()
