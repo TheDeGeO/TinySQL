@@ -333,36 +333,43 @@ namespace StoreDataManager
                 using (StreamReader reader = new StreamReader(tablePath))
                 {
                     string? line;
-                    int lineNumber = 0;
+                    bool isHeaderSection = true;
                     while ((line = reader.ReadLine()) != null)
                     {
-                        string[] parts = line.Split(',');
-                        if (lineNumber == 0)
+                        if (isHeaderSection)
                         {
-                            // This is a header line
-                            columnIndex = Array.IndexOf(parts, columnName);
-                            if (columnIndex == -1)
+                            string[] parts = line.Split(',');
+                            if (parts[0] == columnName)
                             {
-                                Console.WriteLine($"Column {columnName} not found in table {tableName}");
-                                return OperationStatus.Error;
+                                columnIndex = Array.IndexOf(parts, columnName);
+                                isHeaderSection = false;
                             }
                         }
                         else
                         {
                             // This is a data line
-                            if (columnIndex < parts.Length)
+                            if (line.StartsWith("(") && line.EndsWith(")"))
                             {
-                                string value = parts[columnIndex];
-                                if (columnValues.Contains(value))
+                                string[] parts = line.Trim('(', ')').Split(",,");
+                                if (columnIndex < parts.Length)
                                 {
-                                    Console.WriteLine($"Duplicate value found in column {columnName}. Cannot create index.");
-                                    return OperationStatus.Error;
+                                    string value = parts[columnIndex].Trim('"');
+                                    if (columnValues.Contains(value))
+                                    {
+                                        Console.WriteLine($"Duplicate value found in column {columnName}. Cannot create index.");
+                                        return OperationStatus.Error;
+                                    }
+                                    columnValues.Add(value);
                                 }
-                                columnValues.Add(value);
                             }
                         }
-                        lineNumber++;
                     }
+                }
+
+                if (columnIndex == -1)
+                {
+                    Console.WriteLine($"Column {columnName} not found in table {tableName}");
+                    return OperationStatus.Error;
                 }
 
                 // Create the index
