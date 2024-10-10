@@ -1,0 +1,12 @@
+C:\Users\d.obando.1\Documents\TinySQL\Entities\bin\Debug\net8.0\Entities.deps.json
+C:\Users\d.obando.1\Documents\TinySQL\Entities\bin\Debug\net8.0\Entities.dll
+C:\Users\d.obando.1\Documents\TinySQL\Entities\bin\Debug\net8.0\Entities.pdb
+C:\Users\d.obando.1\Documents\TinySQL\Entities\obj\Debug\net8.0\Entities.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\d.obando.1\Documents\TinySQL\Entities\obj\Debug\net8.0\Entities.AssemblyInfoInputs.cache
+C:\Users\d.obando.1\Documents\TinySQL\Entities\obj\Debug\net8.0\Entities.AssemblyInfo.cs
+C:\Users\d.obando.1\Documents\TinySQL\Entities\obj\Debug\net8.0\Entities.csproj.CoreCompileInputs.cache
+C:\Users\d.obando.1\Documents\TinySQL\Entities\obj\Debug\net8.0\Entities.sourcelink.json
+C:\Users\d.obando.1\Documents\TinySQL\Entities\obj\Debug\net8.0\Entities.dll
+C:\Users\d.obando.1\Documents\TinySQL\Entities\obj\Debug\net8.0\refint\Entities.dll
+C:\Users\d.obando.1\Documents\TinySQL\Entities\obj\Debug\net8.0\Entities.pdb
+C:\Users\d.obando.1\Documents\TinySQL\Entities\obj\Debug\net8.0\ref\Entities.dll

@@ -1,0 +1,105 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "ApiInterface/1.0.0": {
+        "dependencies": {
+          "QueryProcessor": "1.0.0",
+          "SqlParserCS": "0.5.4"
+        },
+        "runtime": {
+          "ApiInterface.dll": {}
+        }
+      },
+      "Microsoft.Extensions.ObjectPool/8.0.1": {
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.ObjectPool.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.123.58008"
+          }
+        }
+      },
+      "SqlParserCS/0.5.4": {
+        "dependencies": {
+          "Microsoft.Extensions.ObjectPool": "8.0.1"
+        },
+        "runtime": {
+          "lib/net8.0/SqlParser.dll": {
+            "assemblyVersion": "0.5.4.0",
+            "fileVersion": "0.5.4.0"
+          }
+        }
+      },
+      "Entities/1.0.0": {
+        "runtime": {
+          "Entities.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "QueryProcessor/1.0.0": {
+        "dependencies": {
+          "StoreDataManager": "1.0.0"
+        },
+        "runtime": {
+          "QueryProcessor.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "StoreDataManager/1.0.0": {
+        "dependencies": {
+          "Entities": "1.0.0"
+        },
+        "runtime": {
+          "StoreDataManager.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "ApiInterface/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.Extensions.ObjectPool/8.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-X21b8D6z58EG34OMLH955750mFaEaGs5xLGe9Vyi3059Cgb3sk+p2k/JlQXaieEBRrk+SVlFzDei3Q6PdVzJOA==",
+      "path": "microsoft.extensions.objectpool/8.0.1",
+      "hashPath": "microsoft.extensions.objectpool.8.0.1.nupkg.sha512"
+    },
+    "SqlParserCS/0.5.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-GiA3l0iJ2DkoSWfRYv6Nrm1AhFqlfJnAb/WYabZ3Q3tda2DHpAMs23G0VUtjN++/cNWUhO3RkfXCAbgE8yfZmA==",
+      "path": "sqlparsercs/0.5.4",
+      "hashPath": "sqlparsercs.0.5.4.nupkg.sha512"
+    },
+    "Entities/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "QueryProcessor/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "StoreDataManager/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

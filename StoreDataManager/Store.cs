@@ -80,12 +80,21 @@ namespace StoreDataManager
         {
             if (string.IsNullOrWhiteSpace(databaseName))
             {
+                Console.WriteLine("Database name cannot be empty or whitespace.");
                 return OperationStatus.Error;
             }
 
             string databasePath = Path.Combine(DataPath, databaseName);
             if (Directory.Exists(databasePath))
             {
+                Console.WriteLine($"Database '{databaseName}' already exists.");
+                return OperationStatus.Error;
+            }
+
+            // Check if the database name is already in use
+            if (File.ReadLines(SystemDatabasesFile).Any(line => line.Trim().Equals(databaseName, StringComparison.OrdinalIgnoreCase)))
+            {
+                Console.WriteLine($"Database name '{databaseName}' is already in use.");
                 return OperationStatus.Error;
             }
 
@@ -97,6 +106,7 @@ namespace StoreDataManager
                 writer.WriteLine(databaseName);
             }
 
+            Console.WriteLine($"Database '{databaseName}' created successfully.");
             return OperationStatus.Success;
         }
 
@@ -126,6 +136,15 @@ namespace StoreDataManager
                     return OperationStatus.Error;
                 }
 
+                // Check if the table name is already in use in the current database
+                if (File.ReadLines(SystemTablesFile).Any(line => 
+                    line.Split(',')[0].Equals(currentDatabase, StringComparison.OrdinalIgnoreCase) &&
+                    line.Split(',')[1].Equals(tableName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    Console.WriteLine($"Table name '{tableName}' is already in use in the current database.");
+                    return OperationStatus.Error;
+                }
+
                 using (StreamWriter writer = new StreamWriter(tablePath))
                 {
                     foreach (var column in columns)
@@ -137,7 +156,7 @@ namespace StoreDataManager
                 // Add the new table to SystemTables.table
                 using (StreamWriter writer = File.AppendText(SystemTablesFile))
                 {
-                    writer.WriteLine($"{Path.GetFileName(GetCurrentDatabasePath())},{tableName}");
+                    writer.WriteLine($"{currentDatabase},{tableName}");
                 }
 
                 Console.WriteLine($"Table {tableName} created successfully");
@@ -193,91 +212,90 @@ namespace StoreDataManager
         }
 
         public OperationStatus Select(string tableName, List<string> columns, string whereClause, string orderByClause)
+{
+    string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
+    if (!File.Exists(tablePath))
+    {
+        Console.WriteLine($"Table {tableName} does not exist.");
+        return OperationStatus.Error;
+    }
+
+    List<string[]> results = new List<string[]>();
+    List<string> headers = new List<string>();
+    List<string> types = new List<string>();
+    List<int> columnIndices = new List<int>();
+
+    using (StreamReader reader = new StreamReader(tablePath))
+    {
+        // Read headers and types
+        string? line;
+        while ((line = reader.ReadLine()) != null && !line.StartsWith("("))
         {
-            string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
-            if (!File.Exists(tablePath))
+            var parts = line.Split(',');
+            headers.Add(parts[0]);
+            types.Add(parts[1]);
+        }
+
+        // Handle SELECT * case
+        if (columns.Count == 1 && columns[0] == "*")
+        {
+            columns = headers;
+        }
+
+        // Find indices of requested columns
+        foreach (string column in columns)
+        {
+            int index = headers.IndexOf(column);
+            if (index != -1)
             {
-                Console.WriteLine($"Table {tableName} does not exist.");
+                columnIndices.Add(index);
+            }
+            else
+            {
+                Console.WriteLine($"Column {column} does not exist in table {tableName}");
                 return OperationStatus.Error;
             }
-
-            List<string[]> results = new List<string[]>();
-            List<string> headers = new List<string>();
-            List<string> types = new List<string>();
-            List<int> columnIndices = new List<int>();
-
-            using (StreamReader reader = new StreamReader(tablePath))
-            {
-                // Read headers and types
-                string? headerLine = reader.ReadLine();
-                string? typeLine = reader.ReadLine();
-                
-                if (headerLine != null && typeLine != null)
-                {
-                    headers = headerLine.Split(',').Select(h => h.Trim('"')).ToList();
-                    types = typeLine.Split(',').ToList();
-
-                    // Handle SELECT * case
-                    if (columns.Count == 1 && columns[0] == "*")
-                    {
-                        columns = headers;
-                    }
-
-                    // Find indices of requested columns
-                    foreach (string column in columns)
-                    {
-                        int index = headers.IndexOf(column);
-                        if (index != -1)
-                        {
-                            columnIndices.Add(index);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Column {column} does not exist in table {tableName}");
-                            return OperationStatus.Error;
-                        }
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Table {tableName} is empty or corrupted.");
-                    return OperationStatus.Error;
-                }
-
-                // Process data rows
-                string? line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    ProcessDataLine(line, headers, columnIndices, whereClause, results);
-                }
-            }
-
-            if (!string.IsNullOrEmpty(orderByClause))
-            {
-                ApplyOrderBy(results, headers.ToArray(), orderByClause, columns);
-            }
-
-            // Print results
-            foreach (var row in results)
-            {
-                // Only print the columns that were originally requested
-                var selectedValues = columns.Select(col => row[columns.IndexOf(col)]);
-                Console.WriteLine(string.Join(",", selectedValues.Select(v => string.IsNullOrEmpty(v) ? "NULL" : v)));
-            }
-
-            return OperationStatus.Success;
         }
 
-        private void ProcessDataLine(string line, List<string> headers, List<int> columnIndices, string whereClause, List<string[]> results)
+        // Process data rows
+        do
         {
-            string[] values = line.Trim('(', ')').Split(new[] { ",," }, StringSplitOptions.None);
-            
-            if (EvaluateWhereClause(headers, values, whereClause))
+            if (line != null && line.StartsWith("("))
             {
-                string[] selectedValues = columnIndices.Select(i => i < values.Length ? values[i].Trim('"', ' ', ',') : "NULL").ToArray();
-                results.Add(selectedValues);
+                ProcessDataLine(line, headers, columnIndices, whereClause, results);
             }
-        }
+        } while ((line = reader.ReadLine()) != null);
+    }
+
+    if (!string.IsNullOrEmpty(orderByClause))
+    {
+        ApplyOrderBy(results, headers.ToArray(), orderByClause, columns);
+    }
+
+    // Print results
+    Console.WriteLine(string.Join(",", columns));  // Print column headers
+    foreach (var row in results)
+    {
+        Console.WriteLine(string.Join(",", row.Select(v => string.IsNullOrEmpty(v) ? "NULL" : v)));
+    }
+
+    return OperationStatus.Success;
+}
+
+private void ProcessDataLine(string line, List<string> headers, List<int> columnIndices, string whereClause, List<string[]> results)
+{
+    // Remove leading and trailing parentheses
+    line = line.Trim('(', ')');
+    
+    // Split the line by ",," to handle empty values correctly
+    string[] values = line.Split(new[] { ",," }, StringSplitOptions.None);
+    
+    if (EvaluateWhereClause(headers, values, whereClause))
+    {
+        string[] selectedValues = columnIndices.Select(i => i < values.Length ? values[i].Trim('\'', ' ') : "NULL").ToArray();
+        results.Add(selectedValues);
+    }
+}
 
         private bool EvaluateWhereClause(List<string> headers, string[] values, string whereClause)
         {
@@ -503,9 +521,27 @@ namespace StoreDataManager
 
         public OperationStatus DropTable(string tableName)
         {
-            string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
+            if (string.IsNullOrEmpty(currentDatabase))
+            {
+                Console.WriteLine("No database selected.");
+                return OperationStatus.Error;
+            }
+
+            string currentDatabasePath;
+            try
+            {
+                currentDatabasePath = GetCurrentDatabasePath();
+            }
+            catch (InvalidOperationException)
+            {
+                Console.WriteLine("No database selected.");
+                return OperationStatus.Error;
+            }
+
+            string tablePath = Path.Combine(currentDatabasePath, $"{tableName}.table");
             if (!File.Exists(tablePath))
             {
+                Console.WriteLine($"Table '{tableName}' does not exist in the current database.");
                 return OperationStatus.Error;
             }
 
@@ -517,7 +553,7 @@ namespace StoreDataManager
             {
                 foreach (var line in lines)
                 {
-                    if (!line.Contains(tableName))
+                    if (!line.Equals($"{currentDatabase},{tableName}", StringComparison.OrdinalIgnoreCase))
                     {
                         writer.WriteLine(line);
                     }
@@ -531,7 +567,7 @@ namespace StoreDataManager
             }
 
             // Remove index files associated with the dropped table
-            string[] indexFiles = Directory.GetFiles(GetCurrentDatabasePath(), $"{tableName}_*_index.idx");
+            string[] indexFiles = Directory.GetFiles(currentDatabasePath, $"{tableName}_*_index.idx");
             foreach (string indexFile in indexFiles)
             {
                 File.Delete(indexFile);
@@ -543,13 +579,14 @@ namespace StoreDataManager
             {
                 foreach (var line in lines)
                 {
-                    if (!line.StartsWith($"{currentDatabase},{tableName},"))
+                    if (!line.StartsWith($"{currentDatabase},{tableName},", StringComparison.OrdinalIgnoreCase))
                     {
                         writer.WriteLine(line);
                     }
                 }
             }
 
+            Console.WriteLine($"Table '{tableName}' has been successfully dropped from the database '{currentDatabase}'.");
             return OperationStatus.Success;
         }
 

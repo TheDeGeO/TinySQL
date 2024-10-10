@@ -1,0 +1,258 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\d.obando.1\\Documents\\TinySQL\\ApiInterface\\ApiInterface.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\d.obando.1\\Documents\\TinySQL\\ApiInterface\\ApiInterface.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\ApiInterface\\ApiInterface.csproj",
+        "projectName": "ApiInterface",
+        "projectPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\ApiInterface\\ApiInterface.csproj",
+        "packagesPath": "C:\\Users\\d.obando.1\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\ApiInterface\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\d.obando.1\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\d.obando.1\\Documents\\TinySQL\\QueryProcessor\\QueryProcessor.csproj": {
+                "projectPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\QueryProcessor\\QueryProcessor.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "SqlParserCS": {
+              "target": "Package",
+              "version": "[0.5.4, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\d.obando.1\\Downloads\\dotnet-sdk-8.0.403-win-x64\\sdk\\8.0.403/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\d.obando.1\\Documents\\TinySQL\\Entities\\Entities.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\Entities\\Entities.csproj",
+        "projectName": "Entities",
+        "projectPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\Entities\\Entities.csproj",
+        "packagesPath": "C:\\Users\\d.obando.1\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\Entities\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\d.obando.1\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\d.obando.1\\Downloads\\dotnet-sdk-8.0.403-win-x64\\sdk\\8.0.403/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\d.obando.1\\Documents\\TinySQL\\QueryProcessor\\QueryProcessor.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\QueryProcessor\\QueryProcessor.csproj",
+        "projectName": "QueryProcessor",
+        "projectPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\QueryProcessor\\QueryProcessor.csproj",
+        "packagesPath": "C:\\Users\\d.obando.1\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\QueryProcessor\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\d.obando.1\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\d.obando.1\\Documents\\TinySQL\\StoreDataManager\\StoreDataManager.csproj": {
+                "projectPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\StoreDataManager\\StoreDataManager.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\d.obando.1\\Downloads\\dotnet-sdk-8.0.403-win-x64\\sdk\\8.0.403/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\d.obando.1\\Documents\\TinySQL\\StoreDataManager\\StoreDataManager.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\StoreDataManager\\StoreDataManager.csproj",
+        "projectName": "StoreDataManager",
+        "projectPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\StoreDataManager\\StoreDataManager.csproj",
+        "packagesPath": "C:\\Users\\d.obando.1\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\StoreDataManager\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\d.obando.1\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\d.obando.1\\Documents\\TinySQL\\Entities\\Entities.csproj": {
+                "projectPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\Entities\\Entities.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\d.obando.1\\Downloads\\dotnet-sdk-8.0.403-win-x64\\sdk\\8.0.403/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

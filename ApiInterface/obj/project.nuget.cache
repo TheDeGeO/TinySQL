@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "sPNG/AEa1Oo=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\ApiInterface\\ApiInterface.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\d.obando.1\\.nuget\\packages\\microsoft.extensions.objectpool\\8.0.1\\microsoft.extensions.objectpool.8.0.1.nupkg.sha512",
+    "C:\\Users\\d.obando.1\\.nuget\\packages\\sqlparsercs\\0.5.4\\sqlparsercs.0.5.4.nupkg.sha512"
+  ],
+  "logs": []
+}

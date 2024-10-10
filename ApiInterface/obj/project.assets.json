@@ -1,0 +1,196 @@
+{
+  "version": 3,
+  "targets": {
+    "net8.0": {
+      "Microsoft.Extensions.ObjectPool/8.0.1": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/Microsoft.Extensions.ObjectPool.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.ObjectPool.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "SqlParserCS/0.5.4": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Extensions.ObjectPool": "8.0.1"
+        },
+        "compile": {
+          "lib/net8.0/SqlParser.dll": {}
+        },
+        "runtime": {
+          "lib/net8.0/SqlParser.dll": {}
+        }
+      },
+      "Entities/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "compile": {
+          "bin/placeholder/Entities.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Entities.dll": {}
+        }
+      },
+      "QueryProcessor/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "dependencies": {
+          "StoreDataManager": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/QueryProcessor.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/QueryProcessor.dll": {}
+        }
+      },
+      "StoreDataManager/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "dependencies": {
+          "Entities": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/StoreDataManager.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/StoreDataManager.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Microsoft.Extensions.ObjectPool/8.0.1": {
+      "sha512": "X21b8D6z58EG34OMLH955750mFaEaGs5xLGe9Vyi3059Cgb3sk+p2k/JlQXaieEBRrk+SVlFzDei3Q6PdVzJOA==",
+      "type": "package",
+      "path": "microsoft.extensions.objectpool/8.0.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net462/Microsoft.Extensions.ObjectPool.dll",
+        "lib/net462/Microsoft.Extensions.ObjectPool.xml",
+        "lib/net8.0/Microsoft.Extensions.ObjectPool.dll",
+        "lib/net8.0/Microsoft.Extensions.ObjectPool.xml",
+        "lib/netstandard2.0/Microsoft.Extensions.ObjectPool.dll",
+        "lib/netstandard2.0/Microsoft.Extensions.ObjectPool.xml",
+        "microsoft.extensions.objectpool.8.0.1.nupkg.sha512",
+        "microsoft.extensions.objectpool.nuspec"
+      ]
+    },
+    "SqlParserCS/0.5.4": {
+      "sha512": "GiA3l0iJ2DkoSWfRYv6Nrm1AhFqlfJnAb/WYabZ3Q3tda2DHpAMs23G0VUtjN++/cNWUhO3RkfXCAbgE8yfZmA==",
+      "type": "package",
+      "path": "sqlparsercs/0.5.4",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "icon.jpg",
+        "lib/net7.0/SqlParser.dll",
+        "lib/net8.0/SqlParser.dll",
+        "sqlparsercs.0.5.4.nupkg.sha512",
+        "sqlparsercs.nuspec"
+      ]
+    },
+    "Entities/1.0.0": {
+      "type": "project",
+      "path": "../Entities/Entities.csproj",
+      "msbuildProject": "../Entities/Entities.csproj"
+    },
+    "QueryProcessor/1.0.0": {
+      "type": "project",
+      "path": "../QueryProcessor/QueryProcessor.csproj",
+      "msbuildProject": "../QueryProcessor/QueryProcessor.csproj"
+    },
+    "StoreDataManager/1.0.0": {
+      "type": "project",
+      "path": "../StoreDataManager/StoreDataManager.csproj",
+      "msbuildProject": "../StoreDataManager/StoreDataManager.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net8.0": [
+      "QueryProcessor >= 1.0.0",
+      "SqlParserCS >= 0.5.4"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\d.obando.1\\.nuget\\packages\\": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\ApiInterface\\ApiInterface.csproj",
+      "projectName": "ApiInterface",
+      "projectPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\ApiInterface\\ApiInterface.csproj",
+      "packagesPath": "C:\\Users\\d.obando.1\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\ApiInterface\\obj\\",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "C:\\Users\\d.obando.1\\AppData\\Roaming\\NuGet\\NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net8.0"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "projectReferences": {
+            "C:\\Users\\d.obando.1\\Documents\\TinySQL\\QueryProcessor\\QueryProcessor.csproj": {
+              "projectPath": "C:\\Users\\d.obando.1\\Documents\\TinySQL\\QueryProcessor\\QueryProcessor.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      }
+    },
+    "frameworks": {
+      "net8.0": {
+        "targetAlias": "net8.0",
+        "dependencies": {
+          "SqlParserCS": {
+            "target": "Package",
+            "version": "[0.5.4, )"
+          }
+        },
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Users\\d.obando.1\\Downloads\\dotnet-sdk-8.0.403-win-x64\\sdk\\8.0.403/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

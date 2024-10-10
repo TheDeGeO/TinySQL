@@ -254,6 +254,7 @@ namespace QueryProcessor
             return sqlType.ToUpper() switch
             {
                 "INT" => typeof(int),
+                "FLOAT" => typeof(float),
                 "VARCHAR" => typeof(string),
                 // Add more type mappings as needed
                 _ => typeof(string) // Default to string for unknown types

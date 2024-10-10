@@ -1,0 +1,16 @@
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\bin\Debug\net8.0\StoreDataManager.deps.json
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\bin\Debug\net8.0\StoreDataManager.dll
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\bin\Debug\net8.0\StoreDataManager.pdb
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\bin\Debug\net8.0\Entities.dll
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\bin\Debug\net8.0\Entities.pdb
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\StoreDataManager.csproj.AssemblyReference.cache
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\StoreDataManager.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\StoreDataManager.AssemblyInfoInputs.cache
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\StoreDataManager.AssemblyInfo.cs
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\StoreDataManager.csproj.CoreCompileInputs.cache
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\StoreDataManager.sourcelink.json
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\StoreDat.463CAB2C.Up2Date
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\StoreDataManager.dll
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\refint\StoreDataManager.dll
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\StoreDataManager.pdb
+C:\Users\d.obando.1\Documents\TinySQL\StoreDataManager\obj\Debug\net8.0\ref\StoreDataManager.dll
