@@ -74,6 +74,12 @@ namespace QueryProcessor
                 string whereClause = ExtractWhereClause(sentence);
                 return new Update().Execute(tableName, setClause, whereClause);
             }
+            if (sentence.StartsWith("DELETE"))
+            {
+                string tableName = ExtractTableName(sentence);
+                string whereClause = ExtractWhereClause(sentence);
+                return new Delete().Execute(tableName, whereClause);
+            }
             else
             {
                 throw new UnknownSQLSentenceException();
@@ -179,6 +185,7 @@ namespace QueryProcessor
             int intoIndex = Array.IndexOf(words, "INTO");
             int describeIndex = Array.IndexOf(words, "DESCRIBE");
             int updateIndex = Array.IndexOf(words, "UPDATE");
+            int deleteIndex = Array.IndexOf(words, "DELETE");
             
             if (fromIndex != -1 && fromIndex + 1 < words.Length)
             {
@@ -195,6 +202,10 @@ namespace QueryProcessor
             else if (updateIndex != -1 && updateIndex + 1 < words.Length)
             {
                 return words[updateIndex + 1];
+            }
+            else if (deleteIndex != -1 && fromIndex != -1 && fromIndex + 1 < words.Length)
+            {
+                return words[fromIndex + 1];
             }
             
             // Fallback to the original logic if none of the keywords are found or there's no word after it

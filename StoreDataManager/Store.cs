@@ -607,7 +607,68 @@ namespace StoreDataManager
             return OperationStatus.Success;
         }
 
-        
+        public OperationStatus Delete(string tableName, string whereClause)
+        {
+            string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+            if (!File.Exists(tablePath))
+            {
+                Console.WriteLine($"Table {tableName} does not exist");
+                return OperationStatus.Error;
+            }
+
+            List<string> lines = File.ReadAllLines(tablePath).ToList();
+            List<string> columnNames = new List<string>();
+            List<string> columnTypes = new List<string>();
+            int dataStartIndex = 0;
+
+            // Parse column information
+            for (int i = 0; i < lines.Count; i++)
+            {
+                string[] parts = lines[i].Split(',');
+                if (parts.Length == 2)
+                {
+                    columnNames.Add(parts[0]);
+                    columnTypes.Add(parts[1]);
+                }
+                else
+                {
+                    dataStartIndex = i;
+                    break;
+                }
+            }
+
+            // Parse WHERE condition
+            string[] whereParts = whereClause.Split('=');
+            string whereColumn = whereParts[0].Trim();
+            string whereValue = whereParts[1].Trim();
+            int whereColumnIndex = columnNames.IndexOf(whereColumn);
+
+            if (whereColumnIndex == -1)
+            {
+                Console.WriteLine($"Column {whereColumn} not found in table {tableName}");
+                return OperationStatus.Error;
+            }
+
+            // Remove matching rows
+            for (int i = dataStartIndex; i < lines.Count; i++)
+            {
+                string line = lines[i];
+                if (line.StartsWith("(") && line.EndsWith(")"))
+                {
+                    string[] values = line.Substring(1, line.Length - 2).Split(",,");
+                    if (values[whereColumnIndex] == whereValue)
+                    {
+                        lines.RemoveAt(i);
+                        i--; // Adjust the loop index after removing a line
+                    }
+                }
+            }
+
+            // Write updated content back to file
+            File.WriteAllLines(tablePath, lines);
+
+            return OperationStatus.Success;
+        }
 
         // Add this method to create an index
         public OperationStatus CreateIndex(string indexName, string tableName, string columnName, string indexType)
