@@ -80,6 +80,11 @@ namespace QueryProcessor
                 string whereClause = ExtractWhereClause(sentence);
                 return new Delete().Execute(tableName, whereClause);
             }
+            if (sentence.StartsWith("DROP DATABASE"))
+            {
+                string databaseName = ExtractDatabaseName(sentence);
+                return new DropDatabase().Execute(databaseName);
+            }
             else
             {
                 throw new UnknownSQLSentenceException();

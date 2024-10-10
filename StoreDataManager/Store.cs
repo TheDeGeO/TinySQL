@@ -24,7 +24,7 @@ namespace StoreDataManager
         }
 
         private static readonly string DatabaseBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "TinySQL/Data");
-        private static string DataPath = Path.Combine(DatabaseBasePath, "TESTDB");
+        private static string DataPath = Path.Combine(DatabaseBasePath, "DATApath");
         private static string SystemCatalogPath = Path.Combine(DataPath, "SystemCatalog");
         private static string SystemDatabasesFile = Path.Combine(SystemCatalogPath, "SystemDatabases.table");
         private static string SystemTablesFile = Path.Combine(SystemCatalogPath, "SystemTables.table");
@@ -506,6 +506,30 @@ namespace StoreDataManager
             return OperationStatus.Success;
         }
 
+        public OperationStatus DropDatabase(string databaseName)
+        {
+            string databasePath = Path.Combine(DatabaseBasePath, databaseName);
+            if (!Directory.Exists(databasePath))
+            {
+                Console.WriteLine($"Database '{databaseName}' does not exist.");
+                return OperationStatus.Error;
+            }
+
+            try
+            {
+                // Delete all files and subdirectories
+                Directory.Delete(databasePath, true);
+
+                Console.WriteLine($"Database '{databaseName}' has been successfully dropped.");
+                return OperationStatus.Success;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while dropping the database: {ex.Message}");
+                return OperationStatus.Error;
+            }
+        }
+
         public OperationStatus DescribeTable(string tableName)
         {
             string tablePath = Path.Combine(DataPath, $"{tableName}.table");
@@ -579,7 +603,68 @@ namespace StoreDataManager
                 return OperationStatus.Error;
             }
 
-            // Update matching rows
+            // Check if an index exists for the WHERE column
+            string indexPath = Path.Combine(DataPath, $"{tableName}_{whereColumn}_index.idx");
+            if (File.Exists(indexPath))
+            {
+                return UpdateTableUsingIndex(tableName, setValues, whereColumn, whereValue, indexPath, lines, columnNames, dataStartIndex);
+            }
+            else
+            {
+                return UpdateTableWithoutIndex(tableName, setValues, whereColumn, whereValue, lines, columnNames, dataStartIndex);
+            }
+        }
+
+        private OperationStatus UpdateTableUsingIndex(string tableName, Dictionary<string, string> setValues, string whereColumn, string whereValue, string indexPath, List<string> lines, List<string> columnNames, int dataStartIndex)
+        {
+            Dictionary<string, List<int>> index = LoadIndex(indexPath);
+
+            if (index.TryGetValue(whereValue, out List<int> matchingRows))
+            {
+                foreach (int rowIndex in matchingRows)
+                {
+                    if (rowIndex >= dataStartIndex && rowIndex < lines.Count)
+                    {
+                        string line = lines[rowIndex];
+                        if (line.StartsWith("(") && line.EndsWith(")"))
+                        {
+                            string[] values = line.Substring(1, line.Length - 2).Split(",,");
+                            foreach (var setValue in setValues)
+                            {
+                                int setColumnIndex = columnNames.IndexOf(setValue.Key);
+                                if (setColumnIndex != -1)
+                                {
+                                    values[setColumnIndex] = setValue.Value;
+                                }
+                            }
+                            lines[rowIndex] = "(" + string.Join(",,", values) + ")";
+                        }
+                    }
+                }
+
+                // Write updated content back to file
+                File.WriteAllLines(Path.Combine(DataPath, $"{tableName}.table"), lines);
+
+                // Update the index if necessary
+                if (setValues.ContainsKey(whereColumn))
+                {
+                    UpdateIndex(tableName, whereColumn, lines, dataStartIndex);
+                }
+
+                return OperationStatus.Success;
+            }
+            else
+            {
+                Console.WriteLine($"No rows found matching the condition: {whereColumn} = {whereValue}");
+                return OperationStatus.Error;
+            }
+        }
+
+        private OperationStatus UpdateTableWithoutIndex(string tableName, Dictionary<string, string> setValues, string whereColumn, string whereValue, List<string> lines, List<string> columnNames, int dataStartIndex)
+        {
+            int whereColumnIndex = columnNames.IndexOf(whereColumn);
+            bool rowsUpdated = false;
+
             for (int i = dataStartIndex; i < lines.Count; i++)
             {
                 string line = lines[i];
@@ -597,14 +682,68 @@ namespace StoreDataManager
                             }
                         }
                         lines[i] = "(" + string.Join(",,", values) + ")";
+                        rowsUpdated = true;
                     }
                 }
             }
 
-            // Write updated content back to file
-            File.WriteAllLines(tablePath, lines);
+            if (rowsUpdated)
+            {
+                // Write updated content back to file
+                File.WriteAllLines(Path.Combine(DataPath, $"{tableName}.table"), lines);
+                return OperationStatus.Success;
+            }
+            else
+            {
+                Console.WriteLine($"No rows found matching the condition: {whereColumn} = {whereValue}");
+                return OperationStatus.Error;
+            }
+        }
 
-            return OperationStatus.Success;
+        private Dictionary<string, List<int>> LoadIndex(string indexPath)
+        {
+            Dictionary<string, List<int>> index = new Dictionary<string, List<int>>();
+            string[] indexLines = File.ReadAllLines(indexPath);
+            foreach (string line in indexLines)
+            {
+                string[] parts = line.Split(':');
+                if (parts.Length == 2)
+                {
+                    string key = parts[0];
+                    List<int> values = parts[1].Split(',').Select(int.Parse).ToList();
+                    index[key] = values;
+                }
+            }
+            return index;
+        }
+
+        private void UpdateIndex(string tableName, string columnName, List<string> lines, int dataStartIndex)
+        {
+            Dictionary<string, List<int>> index = new Dictionary<string, List<int>>();
+
+            for (int i = dataStartIndex; i < lines.Count; i++)
+            {
+                string line = lines[i];
+                if (line.StartsWith("(") && line.EndsWith(")"))
+                {
+                    string[] values = line.Substring(1, line.Length - 2).Split(",,");
+                    string key = values[dataStartIndex];
+                    if (!index.ContainsKey(key))
+                    {
+                        index[key] = new List<int>();
+                    }
+                    index[key].Add(i);
+                }
+            }
+
+            string indexPath = Path.Combine(DataPath, $"{tableName}_{columnName}_index.idx");
+            using (StreamWriter writer = new StreamWriter(indexPath))
+            {
+                foreach (var entry in index)
+                {
+                    writer.WriteLine($"{entry.Key}:{string.Join(",", entry.Value)}");
+                }
+            }
         }
 
         public OperationStatus Delete(string tableName, string whereClause)
@@ -649,17 +788,39 @@ namespace StoreDataManager
                 return OperationStatus.Error;
             }
 
-            // Remove matching rows
-            for (int i = dataStartIndex; i < lines.Count; i++)
+            // Check if an index exists for the WHERE column
+            string indexPath = Path.Combine(DataPath, $"{tableName}_{whereColumn}_index.idx");
+            if (File.Exists(indexPath))
             {
-                string line = lines[i];
-                if (line.StartsWith("(") && line.EndsWith(")"))
+                // Use index for faster deletion
+                Dictionary<string, List<int>> index = LoadIndex(indexPath);
+                if (index.ContainsKey(whereValue))
                 {
-                    string[] values = line.Substring(1, line.Length - 2).Split(",,");
-                    if (values[whereColumnIndex] == whereValue)
+                    List<int> rowsToDelete = index[whereValue];
+                    rowsToDelete.Sort((a, b) => b.CompareTo(a)); // Sort in descending order
+                    foreach (int rowIndex in rowsToDelete)
                     {
-                        lines.RemoveAt(i);
-                        i--; // Adjust the loop index after removing a line
+                        if (rowIndex >= dataStartIndex && rowIndex < lines.Count)
+                        {
+                            lines.RemoveAt(rowIndex);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Fallback to linear search if no index is available
+                for (int i = dataStartIndex; i < lines.Count; i++)
+                {
+                    string line = lines[i];
+                    if (line.StartsWith("(") && line.EndsWith(")"))
+                    {
+                        string[] values = line.Substring(1, line.Length - 2).Split(",,");
+                        if (values[whereColumnIndex] == whereValue)
+                        {
+                            lines.RemoveAt(i);
+                            i--; // Adjust the loop index after removing a line
+                        }
                     }
                 }
             }
@@ -667,7 +828,20 @@ namespace StoreDataManager
             // Write updated content back to file
             File.WriteAllLines(tablePath, lines);
 
+            // Update all indices for this table
+            UpdateAllIndices(tableName, lines, dataStartIndex);
+
             return OperationStatus.Success;
+        }
+
+        private void UpdateAllIndices(string tableName, List<string> lines, int dataStartIndex)
+        {
+            string[] indexFiles = Directory.GetFiles(DataPath, $"{tableName}_*_index.idx");
+            foreach (string indexFile in indexFiles)
+            {
+                string columnName = Path.GetFileNameWithoutExtension(indexFile).Split('_')[1];
+                UpdateIndex(tableName, columnName, lines, dataStartIndex);
+            }
         }
 
         // Add this method to create an index
