@@ -78,6 +78,9 @@ namespace StoreDataManager
 
         public OperationStatus CreateDatabase(string databaseName)
         {
+            // Remove semicolon from the database name if present
+            databaseName = databaseName.TrimEnd(';');
+
             if (string.IsNullOrWhiteSpace(databaseName))
             {
                 Console.WriteLine("Database name cannot be empty or whitespace.");
@@ -393,76 +396,70 @@ private void ProcessDataLine(string line, List<string> headers, List<int> column
         }
 
         private static void ApplyOrderBy(List<string[]> results, string[] headers, string orderByClause, List<string> selectedColumns)
+{
+    if (string.IsNullOrWhiteSpace(orderByClause))
+    {
+        return; // No order by clause, do nothing
+    }
+
+    string[] parts = orderByClause.Split(' ');
+    if (parts.Length < 2)
+    {
+        return; // Invalid order by clause, do nothing
+    }
+
+    string columnName = parts[0];
+    string direction = parts.Length > 1 ? parts[1].ToUpper() : "ASC";
+
+    if (direction != "ASC" && direction != "DESC")
+    {
+        return; // Invalid direction, do nothing
+    }
+
+    int columnIndex = Array.IndexOf(headers, columnName);
+    if (columnIndex == -1)
+    {
+        return; // Column not found, do nothing
+    }
+
+    // Store the original indices, full row data, and selected column data before sorting
+    var tempResults = results.Select((row, index) => new
+    {
+        Row = row,
+        Index = index,
+        SortValue = row[columnIndex],
+        SelectedValues = selectedColumns.Select(col => row[Array.IndexOf(headers, col)]).ToArray()
+    }).ToList();
+
+    tempResults.Sort((a, b) =>
+    {
+        int comparison;
+        if (int.TryParse(a.SortValue, out int intA) && int.TryParse(b.SortValue, out int intB))
         {
-            if (string.IsNullOrWhiteSpace(orderByClause))
-            {
-                return; // No order by clause, do nothing
-            }
-        
-            string[] parts = orderByClause.Split(' ');
-            if (parts.Length < 2)
-            {
-                return; // Invalid order by clause, do nothing
-            }
-        
-            string columnName = parts[0];
-            string direction = parts.Length > 1 ? parts[1].ToUpper() : "ASC";
-        
-            if (direction != "ASC" && direction != "DESC")
-            {
-                return; // Invalid direction, do nothing
-            }
-        
-            int columnIndex = Array.IndexOf(headers, columnName);
-            if (columnIndex == -1)
-            {
-                return; // Column not found, do nothing
-            }
-        
-            // Store the original indices, full row data, and selected column data before sorting
-            var tempResults = results.Select((row, index) => new
-            {
-                Row = row,
-                Index = index,
-                SortValue = row[columnIndex],
-                SelectedValues = selectedColumns.Select(col => row[Array.IndexOf(headers, col)]).ToArray()
-            }).ToList();
-        
-            tempResults.Sort((a, b) =>
-            {
-                int comparison;
-                if (double.TryParse(a.SortValue, out double doubleA) && double.TryParse(b.SortValue, out double doubleB))
-                {
-                    comparison = doubleA.CompareTo(doubleB);
-                }
-                else
-                {
-                    comparison = string.Compare(a.SortValue, b.SortValue, StringComparison.OrdinalIgnoreCase);
-                }
-        
-                // If values are equal, use the original index for stable sorting
-                if (comparison == 0)
-                {
-                    return a.Index.CompareTo(b.Index);
-                }
-        
-                // Fix for >= operator
-                if (direction == "ASC" && comparison > 0)
-                {
-                    return 1;
-                }
-                else if (direction == "DESC" && comparison < 0)
-                {
-                    return -1;
-                }
-        
-                return direction == "DESC" ? -comparison : comparison;
-            });
-        
-            // Update the results list with the sorted data, but only include selected columns
-            results.Clear();
-            results.AddRange(tempResults.Select(item => item.SelectedValues));
+            comparison = intA.CompareTo(intB);
         }
+        else if (double.TryParse(a.SortValue, out double doubleA) && double.TryParse(b.SortValue, out double doubleB))
+        {
+            comparison = doubleA.CompareTo(doubleB);
+        }
+        else
+        {
+            comparison = string.Compare(a.SortValue, b.SortValue, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // If values are equal, use the original index for stable sorting
+        if (comparison == 0)
+        {
+            return a.Index.CompareTo(b.Index);
+        }
+
+        return direction == "DESC" ? -comparison : comparison;
+    });
+
+    // Update the results list with the sorted data, but only include selected columns
+    results.Clear();
+    results.AddRange(tempResults.Select(item => item.SelectedValues));
+}
 
         public OperationStatus ShowDatabases()
         {
