@@ -67,10 +67,37 @@ namespace QueryProcessor
                 string tableName = ExtractTableName(sentence);
                 return new DescribeTable().Execute(tableName);
             }
+            if (sentence.StartsWith("UPDATE"))
+            {
+                string tableName = ExtractTableName(sentence);
+                Dictionary<string, string> setClause = ExtractSetClause(sentence);
+                string whereClause = ExtractWhereClause(sentence);
+                return new Update().Execute(tableName, setClause, whereClause);
+            }
             else
             {
                 throw new UnknownSQLSentenceException();
             }
+        }
+
+        public static Dictionary<string, string> ExtractSetClause(string sentence)
+        {
+            int setIndex = sentence.IndexOf(" SET ", StringComparison.OrdinalIgnoreCase);
+            if (setIndex == -1) return new Dictionary<string, string>();
+            
+            string setClause = sentence.Substring(setIndex + 5).Trim();
+            int whereIndex = setClause.IndexOf(" WHERE ", StringComparison.OrdinalIgnoreCase);
+            if (whereIndex != -1)
+            {
+                setClause = setClause.Substring(0, whereIndex).Trim();
+            }
+
+            return setClause.Split(',')
+                            .Select(pair => pair.Split('='))
+                            .ToDictionary(
+                                parts => parts[0].Trim(),
+                                parts => parts[1].Trim().Trim('\'', '"')
+                            );
         }
 
         public static List<string> ExtractColumns(string sentence)
@@ -151,6 +178,7 @@ namespace QueryProcessor
             int fromIndex = Array.IndexOf(words, "FROM");
             int intoIndex = Array.IndexOf(words, "INTO");
             int describeIndex = Array.IndexOf(words, "DESCRIBE");
+            int updateIndex = Array.IndexOf(words, "UPDATE");
             
             if (fromIndex != -1 && fromIndex + 1 < words.Length)
             {
@@ -163,6 +191,10 @@ namespace QueryProcessor
             else if (describeIndex != -1 && describeIndex + 1 < words.Length)
             {
                 return words[describeIndex + 1];
+            }
+            else if (updateIndex != -1 && updateIndex + 1 < words.Length)
+            {
+                return words[updateIndex + 1];
             }
             
             // Fallback to the original logic if none of the keywords are found or there's no word after it
