@@ -10,7 +10,7 @@ namespace StoreDataManager
     {
         private static Store? instance = null;
         private static readonly object _lock = new object();
-               
+        
         public static Store GetInstance()
         {
             lock(_lock)
@@ -23,23 +23,28 @@ namespace StoreDataManager
             }
         }
 
-        private static readonly string DatabaseBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "TinySQL/Data");
-        private static string DataPath = Path.Combine(DatabaseBasePath, "DATApath");
-        private static string SystemCatalogPath = Path.Combine(DataPath, "SystemCatalog");
-        private static string SystemDatabasesFile = Path.Combine(SystemCatalogPath, "SystemDatabases.table");
-        private static string SystemTablesFile = Path.Combine(SystemCatalogPath, "SystemTables.table");
+        private static readonly string DatabaseBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "TinySQL");
+        private static readonly string SystemCatalogPath = Path.Combine(DatabaseBasePath, "SystemCatalog");
+        private static readonly string DataPath = Path.Combine(DatabaseBasePath, "Databases");
+        private static readonly string SystemDatabasesFile = Path.Combine(SystemCatalogPath, "SystemDatabases.table");
+        private static readonly string SystemTablesFile = Path.Combine(SystemCatalogPath, "SystemTables.table");
+        private static readonly string SystemIndicesFile = Path.Combine(SystemCatalogPath, "SystemIndices.table");
 
+        private string currentDatabase = "";
         private Dictionary<string, Dictionary<string, Index>> tableIndices = new Dictionary<string, Dictionary<string, Index>>();
 
         private Store()
         {
-            InitializeSystemCatalog();
+            InitializeDirectories();
             LoadIndices();
         }
 
-        private void InitializeSystemCatalog()
+        private void InitializeDirectories()
         {
+            Directory.CreateDirectory(DatabaseBasePath);
             Directory.CreateDirectory(SystemCatalogPath);
+            Directory.CreateDirectory(DataPath);
+
             if (!File.Exists(SystemDatabasesFile))
             {
                 File.Create(SystemDatabasesFile).Close();
@@ -47,6 +52,10 @@ namespace StoreDataManager
             if (!File.Exists(SystemTablesFile))
             {
                 File.Create(SystemTablesFile).Close();
+            }
+            if (!File.Exists(SystemIndicesFile))
+            {
+                File.Create(SystemIndicesFile).Close();
             }
         }
 
@@ -57,16 +66,13 @@ namespace StoreDataManager
                 return OperationStatus.Error;
             }
 
-            string databasePath = Path.Combine(DatabaseBasePath, databaseName);
+            string databasePath = Path.Combine(DataPath, databaseName);
             if (!Directory.Exists(databasePath))
             {
                 return OperationStatus.Error;
             }
 
-            DataPath = databasePath;
-            SystemCatalogPath = Path.Combine(DataPath, "SystemCatalog");
-            SystemDatabasesFile = Path.Combine(SystemCatalogPath, "SystemDatabases.table");
-            SystemTablesFile = Path.Combine(SystemCatalogPath, "SystemTables.table");
+            currentDatabase = databaseName;
             return OperationStatus.Success;
         }
 
@@ -77,7 +83,7 @@ namespace StoreDataManager
                 return OperationStatus.Error;
             }
 
-            string databasePath = Path.Combine(DatabaseBasePath, databaseName);
+            string databasePath = Path.Combine(DataPath, databaseName);
             if (Directory.Exists(databasePath))
             {
                 return OperationStatus.Error;
@@ -94,6 +100,15 @@ namespace StoreDataManager
             return OperationStatus.Success;
         }
 
+        private string GetCurrentDatabasePath()
+        {
+            if (string.IsNullOrEmpty(currentDatabase))
+            {
+                throw new InvalidOperationException("No database selected.");
+            }
+            return Path.Combine(DataPath, currentDatabase);
+        }
+
         public OperationStatus CreateTable(string tableName, List<(string Name, Type Type)> columns)
         {
             try
@@ -104,7 +119,7 @@ namespace StoreDataManager
                     return OperationStatus.Error;
                 }
 
-                string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+                string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
                 if (File.Exists(tablePath))
                 {
                     Console.WriteLine($"Table {tableName} already exists");
@@ -122,7 +137,7 @@ namespace StoreDataManager
                 // Add the new table to SystemTables.table
                 using (StreamWriter writer = File.AppendText(SystemTablesFile))
                 {
-                    writer.WriteLine($"{Path.GetFileName(DataPath)},{tableName}");
+                    writer.WriteLine($"{Path.GetFileName(GetCurrentDatabasePath())},{tableName}");
                 }
 
                 Console.WriteLine($"Table {tableName} created successfully");
@@ -179,7 +194,7 @@ namespace StoreDataManager
 
         public OperationStatus Select(string tableName, List<string> columns, string whereClause, string orderByClause)
         {
-            string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+            string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
             if (!File.Exists(tablePath))
             {
                 Console.WriteLine($"Table {tableName} does not exist.");
@@ -433,21 +448,17 @@ namespace StoreDataManager
 
         public OperationStatus ShowDatabases()
         {
-            if (!Directory.Exists(DatabaseBasePath))
+            if (!Directory.Exists(DataPath))
             {
                 Console.WriteLine("No databases found.");
                 return OperationStatus.Success;
             }
 
-            string[] databases = Directory.GetDirectories(DatabaseBasePath);
+            string[] databases = Directory.GetDirectories(DataPath);
             foreach (var database in databases)
             {
                 string databaseName = Path.GetFileName(database);
-                if (databaseName != "SystemCatalog")
-                {
-                    Console.WriteLine(databaseName);
-                }
-
+                Console.WriteLine(databaseName);
             }
 
             return OperationStatus.Success;
@@ -455,6 +466,12 @@ namespace StoreDataManager
 
         public OperationStatus ShowTables()
         {
+            if (string.IsNullOrEmpty(currentDatabase))
+            {
+                Console.WriteLine("No database selected.");
+                return OperationStatus.Error;
+            }
+
             if (!File.Exists(SystemTablesFile))
             {
                 Console.WriteLine("No tables found in the current database.");
@@ -467,8 +484,12 @@ namespace StoreDataManager
                 string? line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    Console.WriteLine(line);
-                    tablesFound = true;
+                    string[] parts = line.Split(',');
+                    if (parts.Length == 2 && parts[0] == currentDatabase)
+                    {
+                        Console.WriteLine(parts[1]);
+                        tablesFound = true;
+                    }
                 }
             }
 
@@ -482,7 +503,7 @@ namespace StoreDataManager
 
         public OperationStatus DropTable(string tableName)
         {
-            string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+            string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
             if (!File.Exists(tablePath))
             {
                 return OperationStatus.Error;
@@ -503,12 +524,38 @@ namespace StoreDataManager
                 }
             }
 
+            // Remove any indices associated with the dropped table
+            if (tableIndices.ContainsKey(tableName))
+            {
+                tableIndices.Remove(tableName);
+            }
+
+            // Remove index files associated with the dropped table
+            string[] indexFiles = Directory.GetFiles(GetCurrentDatabasePath(), $"{tableName}_*_index.idx");
+            foreach (string indexFile in indexFiles)
+            {
+                File.Delete(indexFile);
+            }
+
+            // Update SystemIndicesFile to remove entries for the dropped table
+            lines = File.ReadAllLines(SystemIndicesFile);
+            using (StreamWriter writer = new StreamWriter(SystemIndicesFile))
+            {
+                foreach (var line in lines)
+                {
+                    if (!line.StartsWith($"{currentDatabase},{tableName},"))
+                    {
+                        writer.WriteLine(line);
+                    }
+                }
+            }
+
             return OperationStatus.Success;
         }
 
         public OperationStatus DropDatabase(string databaseName)
         {
-            string databasePath = Path.Combine(DatabaseBasePath, databaseName);
+            string databasePath = Path.Combine(DataPath, databaseName);
             if (!Directory.Exists(databasePath))
             {
                 Console.WriteLine($"Database '{databaseName}' does not exist.");
@@ -519,6 +566,21 @@ namespace StoreDataManager
             {
                 // Delete all files and subdirectories
                 Directory.Delete(databasePath, true);
+
+                // Remove the database entry from SystemDatabasesFile
+                List<string> lines = File.ReadAllLines(SystemDatabasesFile).ToList();
+                lines.RemoveAll(line => line.Trim() == databaseName);
+                File.WriteAllLines(SystemDatabasesFile, lines);
+
+                // Remove all entries for this database from SystemTablesFile
+                lines = File.ReadAllLines(SystemTablesFile).ToList();
+                lines.RemoveAll(line => line.StartsWith($"{databaseName},"));
+                File.WriteAllLines(SystemTablesFile, lines);
+
+                // Remove all entries for this database from SystemIndicesFile
+                lines = File.ReadAllLines(SystemIndicesFile).ToList();
+                lines.RemoveAll(line => line.StartsWith($"{databaseName},"));
+                File.WriteAllLines(SystemIndicesFile, lines);
 
                 Console.WriteLine($"Database '{databaseName}' has been successfully dropped.");
                 return OperationStatus.Success;
@@ -532,7 +594,7 @@ namespace StoreDataManager
 
         public OperationStatus DescribeTable(string tableName)
         {
-            string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+            string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
             if (!File.Exists(tablePath))
             {
                 Console.WriteLine($"Table {tableName} does not exist");
@@ -563,7 +625,7 @@ namespace StoreDataManager
 
         public OperationStatus UpdateTable(string tableName, Dictionary<string, string> setValues, string whereCondition)
         {
-            string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+            string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
             if (!File.Exists(tablePath))
             {
                 Console.WriteLine($"Table {tableName} does not exist");
@@ -604,7 +666,7 @@ namespace StoreDataManager
             }
 
             // Check if an index exists for the WHERE column
-            string indexPath = Path.Combine(DataPath, $"{tableName}_{whereColumn}_index.idx");
+            string indexPath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}_{whereColumn}_index.idx");
             if (File.Exists(indexPath))
             {
                 return UpdateTableUsingIndex(tableName, setValues, whereColumn, whereValue, indexPath, lines, columnNames, dataStartIndex);
@@ -643,7 +705,7 @@ namespace StoreDataManager
                 }
 
                 // Write updated content back to file
-                File.WriteAllLines(Path.Combine(DataPath, $"{tableName}.table"), lines);
+                File.WriteAllLines(Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table"), lines);
 
                 // Update the index if necessary
                 if (setValues.ContainsKey(whereColumn))
@@ -690,7 +752,7 @@ namespace StoreDataManager
             if (rowsUpdated)
             {
                 // Write updated content back to file
-                File.WriteAllLines(Path.Combine(DataPath, $"{tableName}.table"), lines);
+                File.WriteAllLines(Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table"), lines);
                 return OperationStatus.Success;
             }
             else
@@ -736,7 +798,7 @@ namespace StoreDataManager
                 }
             }
 
-            string indexPath = Path.Combine(DataPath, $"{tableName}_{columnName}_index.idx");
+            string indexPath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}_{columnName}_index.idx");
             using (StreamWriter writer = new StreamWriter(indexPath))
             {
                 foreach (var entry in index)
@@ -748,7 +810,7 @@ namespace StoreDataManager
 
         public OperationStatus Delete(string tableName, string whereClause)
         {
-            string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+            string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
             if (!File.Exists(tablePath))
             {
                 Console.WriteLine($"Table {tableName} does not exist");
@@ -789,7 +851,7 @@ namespace StoreDataManager
             }
 
             // Check if an index exists for the WHERE column
-            string indexPath = Path.Combine(DataPath, $"{tableName}_{whereColumn}_index.idx");
+            string indexPath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}_{whereColumn}_index.idx");
             if (File.Exists(indexPath))
             {
                 // Use index for faster deletion
@@ -836,7 +898,7 @@ namespace StoreDataManager
 
         private void UpdateAllIndices(string tableName, List<string> lines, int dataStartIndex)
         {
-            string[] indexFiles = Directory.GetFiles(DataPath, $"{tableName}_*_index.idx");
+            string[] indexFiles = Directory.GetFiles(GetCurrentDatabasePath(), $"{tableName}_*_index.idx");
             foreach (string indexFile in indexFiles)
             {
                 string columnName = Path.GetFileNameWithoutExtension(indexFile).Split('_')[1];
@@ -856,7 +918,7 @@ namespace StoreDataManager
                     return OperationStatus.Error;
                 }
 
-                string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+                string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
                 if (!File.Exists(tablePath))
                 {
                     Console.WriteLine($"Table {tableName} does not exist");
@@ -1467,7 +1529,7 @@ namespace StoreDataManager
         {
             try
             {
-                string tablePath = Path.Combine(DataPath, $"{tableName}.table");
+                string tablePath = Path.Combine(GetCurrentDatabasePath(), $"{tableName}.table");
                 if (!File.Exists(tablePath))
                 {
                     Console.WriteLine($"Table {tableName} does not exist");
