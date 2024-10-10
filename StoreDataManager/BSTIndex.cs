@@ -7,6 +7,7 @@ namespace StoreDataManager;
 public class BSTIndex : Index
         {
             private BSTNode root;
+            private Store store;
 
             private class BSTNode
             {

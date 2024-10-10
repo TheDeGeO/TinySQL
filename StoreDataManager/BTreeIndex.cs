@@ -9,6 +9,7 @@ public class BTreeIndex : Index
         {
             private const int T = 2; // Minimum degree of B-Tree
             private BTreeNode root;
+            private Store store;
 
             private class BTreeNode
             {
@@ -31,6 +32,7 @@ public class BTreeIndex : Index
             public BTreeIndex()
             {
             root = new BTreeNode(true);
+            store = Store.GetInstance();
             }
 
             public override void Insert(string key, int value)
