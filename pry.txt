@@ -1,3 +1,5 @@
 David Obando Blanco
 Andy Lopez Mora
 https://github.com/TheDeGeO/TinySQL
+
+SELECT * FROM table500 WHERE NAME LIKE '%David%';
