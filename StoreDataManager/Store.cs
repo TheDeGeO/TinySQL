@@ -348,11 +348,13 @@ namespace StoreDataManager
             }
 
             // Print results
-            Console.WriteLine(string.Join(",", columns));  // Print column headers
+            Console.WriteLine();
+            Console.WriteLine(string.Join("\t", columns));  // Print column headers
             foreach (var row in results)
             {
-                Console.WriteLine(string.Join(",", row.Select(v => string.IsNullOrEmpty(v) ? "NULL" : v)));
+                Console.WriteLine(string.Join("\t", row.Select(v => string.IsNullOrEmpty(v) ? "NULL" : v)));
             }
+            Console.WriteLine();
 
             return OperationStatus.Success;
         }
